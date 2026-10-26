@@ -37,22 +37,13 @@ from anylabeling.config import (
 from anylabeling import config as anylabeling_config
 
 
-def is_wsl_environment():
-    if os.environ.get("WSL_DISTRO_NAME") or os.environ.get("WSL_INTEROP"):
-        return True
-
-    try:
-        with open("/proc/version", "r", encoding="utf-8") as f:
-            return "microsoft" in f.read().lower()
-    except OSError:
-        return False
-
-
 def get_default_qt_platform():
     if os.environ.get("QT_QPA_PLATFORM"):
         return None
 
-    if is_wsl_environment() and os.environ.get("WAYLAND_DISPLAY"):
+    # Default to XWayland on Wayland sessions: the native Qt Wayland
+    # backend has input-method focus and repaint issues on some DEs.
+    if os.environ.get("WAYLAND_DISPLAY"):
         return "xcb"
 
     return None
@@ -355,8 +346,8 @@ def main():
         if default_qt_platform:
             os.environ["QT_QPA_PLATFORM"] = default_qt_platform
             logger.info(
-                "🖥️ Detected WSL/Wayland; using Qt platform: "
-                f"{default_qt_platform}"
+                "🖥️ Detected Wayland session; using Qt platform "
+                f"(via XWayland): {default_qt_platform}"
             )
 
     anylabeling_config.current_config_file = config_file_or_yaml
